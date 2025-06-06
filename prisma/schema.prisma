@@ -1,0 +1,82 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+   generator client {
+     provider = "prisma-client-js"
+     // output   = "../generated/prisma"
+   }
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id         String    @id @default(uuid())
+  nome       String    @unique
+  cnpj       String    @unique
+  endereco   String?
+  telefone   String?
+  criada_em  DateTime  @default(now())
+  produtos   Product[]
+  usuarios   EmpresaUsuario[]
+}
+
+model Product {
+  id          String    @id @default(uuid())
+  nome        String
+  descricao   String?
+  preco       Decimal   @db.Decimal(10,2)
+  empresa_id  String
+  criado_em   DateTime  @default(now())
+  empresa     Company   @relation(fields: [empresa_id], references: [id])
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum CargoEmpresa {
+  ADMIN
+  USER
+}
+
+model EmpresaUsuario {
+  id         String   @id @default(uuid())
+  user_id    String
+  empresa_id String
+  cargo      CargoEmpresa @default(USER)
+  criado_em  DateTime @default(now())
+
+  user    User    @relation(fields: [user_id], references: [id])
+  empresa Company @relation(fields: [empresa_id], references: [id])
+
+  @@unique([user_id, empresa_id])
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  nome      String
+  role      Role     @default(USER)
+  criado_em DateTime @default(now())
+  empresas  EmpresaUsuario[]
+  logs      AuditLog[]
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  user_id    String
+  acao       String
+  entidade   String
+  entidade_id String
+  detalhes   String?
+  criado_em  DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id])
+}
